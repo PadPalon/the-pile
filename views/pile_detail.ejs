@@ -1,0 +1,92 @@
+<style>
+    .current-upvote {
+        background-color: greenyellow;
+    }
+
+    .current-downvote {
+        background-color: red;
+    }
+</style>
+
+<script type="text/javascript">
+    const upvote = id => {
+        sendVote(id, true)
+    }
+
+    const downvote = id => {
+        sendVote(id, false)
+    }
+
+    const sendVote = (id, isUpvote) => {
+        const url = `/item/vote/${isUpvote ? 'up' : 'down'}`
+
+        // post body data
+        const item = {
+            pileId: '<%= pile.identifier %>',
+            itemId: id
+        }
+
+        // request options
+        const options = {
+            method: 'PUT',
+            body: JSON.stringify(item),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }
+
+        fetch(url, options).then(res => window.location.reload(true))
+    }
+
+    const createItem = () => {
+        const url = '/item'
+
+        const item = {
+            pileId: '<%= pile.identifier %>',
+            name: document.getElementById("item-name").value
+        }
+
+        // request options
+        const options = {
+            method: 'POST',
+            body: JSON.stringify(item),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }
+
+        // send POST request
+        fetch(url, options).then(res => window.location.reload(true))
+    }
+</script>
+
+<div>
+    <h1><%= pile.name %></h1>
+    <table>
+        <thead>
+            <tr>
+                <td>Name</td>
+                <td>Votes</td>
+                <td></td>
+            </tr>
+        </thead>
+        <tbody>
+        <% pile.items.sort((first, second) => (second.upvotes - second.downvotes) - (first.upvotes - first.downvotes)).forEach(item => { %>
+            <tr>
+                <td><%= item.name %></td>
+                <td><%= item.upvotes - item.downvotes %></td>
+                <td>
+                    <button class="<%= votes[item.identifier] === 'UP' ? 'current-upvote' : '' %>" onclick="upvote('<%= item.identifier %>')">Upvote</button>
+                    <button class="<%= votes[item.identifier] === 'DOWN' ? 'current-downvote' : '' %>" onclick="downvote('<%= item.identifier %>')">Downvote</button>
+                </td>
+            </tr>
+        <% }) %>
+        <tr>
+            <td><input id="item-name"/></td>
+            <td></td>
+            <td><button onclick="createItem()">New</button></td>
+        </tr>
+        </tbody> 
+    </table>
+    <p><a href="/piles">Go to pile list</a></p>
+</div>

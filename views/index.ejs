@@ -1,0 +1,12 @@
+<div>
+    <% if (user) { %>
+        <h2>Hello, <%= user.displayName %>. - <a href='/logout'>Logout</a></h2>
+        <p><a href="/account">See Account Information</a></p>
+        <p><a href="/piles">See Piles</a></p>
+    <% } else { %>
+        <div>
+            <h2>Welcome! Please log in.</h2>
+            <p><a href="/auth/steam">Sign On with Steam</a></p>
+        </div>
+    <% } %>
+</div>

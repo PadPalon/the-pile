@@ -1,0 +1,33 @@
+<script type="text/javascript">
+    const createPile = () => {
+        const url = '/pile'
+
+        // post body data
+        const pile = {
+        }
+
+        // request options
+        const options = {
+            method: 'POST',
+            body: JSON.stringify(pile),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }
+
+        // send POST request
+        fetch(url, options)
+            .then(res => res.json())
+            .then(res => console.log(res))
+    }
+</script>
+
+<div>
+    <ul>
+        <% piles.forEach(pile => { %>
+            <li><a href="/piles/<%= pile.identifier %>"><%= pile.name %></a></li>
+        <% }) %> 
+    </ul>
+    <a href="piles/create"><button>Create pile</button></a>
+    <p><a href="/">Go to homepage</a></p>
+</div>
