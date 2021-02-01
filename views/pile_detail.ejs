@@ -20,13 +20,11 @@
     const sendVote = (id, isUpvote) => {
         const url = `/item/vote/${isUpvote ? 'up' : 'down'}`
 
-        // post body data
         const item = {
             pileId: '<%= pile.identifier %>',
             itemId: id
         }
 
-        // request options
         const options = {
             method: 'PUT',
             body: JSON.stringify(item),
@@ -46,7 +44,6 @@
             name: document.getElementById("item-name").value
         }
 
-        // request options
         const options = {
             method: 'POST',
             body: JSON.stringify(item),
@@ -55,7 +52,6 @@
             }
         }
 
-        // send POST request
         fetch(url, options).then(res => window.location.reload(true))
     }
 </script>

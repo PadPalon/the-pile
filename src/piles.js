@@ -1,38 +1,43 @@
-const piles = {}
+const low = require('lowdb')
+const FileSync = require('lowdb/adapters/FileSync')
+
+const adapter = new FileSync('data/piles.json')
+const db = low(adapter)
+
+db.defaults({ piles: [] }).write()
 
 const { v4: uuid } = require('uuid')
 
 const getPile = (identifier, user) => {
-    const pile = piles[identifier]
-    if (pile && pile.creator === user.identifier) {
-        return pile
-    } else {
-        return null
-    }
+    return db.get('piles').find({identifier: identifier, creator: user.identifier}).value()
 }
 
 const getPiles = user => {
-    return Object.values(piles).filter(pile => pile.creator === user.identifier)
+    return db.get('piles').filter({'creator': user.identifier}).value()
 }
 
 const createPile = (name = 'New list', user) => {
     const pile = {
         identifier: uuid(),
         name,
-        items: [createItem()],
+        items: [],
         creator: user.identifier
     }
-    piles[pile.identifier] = pile
+    db.get('piles')
+        .push(pile)
+        .write()
     return pile
 }
 
-const createItem = (name = 'New item') => {
-    return {
+const createItem = (pile, name = 'New item') => {
+    const item = {
         identifier: uuid(),
-        name,
-        upvotes: 0,
-        downvotes: 0
+        name
     }
+    db.get('piles').find({identifier: pile.identifier})
+        .get('items').push(item)
+        .write()
+    return item
 }
 
 module.exports = {

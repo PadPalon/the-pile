@@ -7,8 +7,12 @@ const FileSync = require('lowdb/adapters/FileSync')
 const SteamStrategy = require('passport-steam').Strategy
 const bodyParser = require('body-parser')
 
-// The default value must be an array.
-const adapter = new FileSync('sessions.json', { defaultValue: [] })
+const fs = require('fs')
+if(!fs.existsSync('data/')) {
+    fs.mkdirSync('data')
+}
+
+const adapter = new FileSync('data/sessions.json', { defaultValue: [] })
 const db = lowdb(adapter)
 
 const userStore = require('./users')
@@ -75,6 +79,10 @@ app.get('/piles/create', ensureAuthenticated, (req, res) => res.render('pile_cre
 app.get('/piles/:id', ensureAuthenticated, (req, res) => {
     const pileId = req.params.id
     const pile = getPileFromUser(req.user, pileId)
+    pile.items.forEach(item => {
+        item.upvotes = voteStore.getUpvotes(item)
+        item.downvotes = voteStore.getDownvotes(item)
+    })
     const votes = pile.items.map(item => [item.identifier, voteStore.getVote(item, req.user)])
         .reduce((acc, curr) => ({
             ...acc,
@@ -94,9 +102,9 @@ app.post('/pile', ensureAuthenticated, (req, res) => {
 app.post('/item', ensureAuthenticated, (req, res) => {
     const pileId = req.body.pileId
     const name = req.body.name
-    const item = pileStore.createItem(name)
     const pile = getPileFromUser(req.user, pileId)
-    pile.items.push(item)
+    const item = pileStore.createItem(pile, name)
+    voteStore.setupItemVotes(item)
     res.send(item)
 })
 app.put('/item/vote/up', ensureAuthenticated, (req, res) => {
@@ -106,14 +114,10 @@ app.put('/item/vote/up', ensureAuthenticated, (req, res) => {
     const item = getItemFromPile(pile, itemId)
     if (voteStore.getVote(item, req.user) === 'DOWN') {
         voteStore.addUpvote(item, req.user)
-        item.downvotes -= 1
-        item.upvotes += 1
     } else if (voteStore.getVote(item, req.user) === 'UP') {
         voteStore.removeVote(item, req.user)
-        item.upvotes -= 1
     } else if (voteStore.getVote(item, req.user) !== 'UP') {
         voteStore.addUpvote(item, req.user)
-        item.upvotes += 1
     }
     res.end()
 })
@@ -124,14 +128,10 @@ app.put('/item/vote/down', ensureAuthenticated, (req, res) => {
     const item = getItemFromPile(pile, itemId)
     if (voteStore.getVote(item, req.user) === 'UP') {
         voteStore.addDownvote(item, req.user)
-        item.upvotes -= 1
-        item.downvotes += 1
     } else if (voteStore.getVote(item, req.user) === 'DOWN') {
         voteStore.removeVote(item, req.user)
-        item.downvotes -= 1
     } else if (voteStore.getVote(item, req.user) !== 'DOWN') {
         voteStore.addDownvote(item, req.user)
-        item.downvotes += 1
     }
     res.end()
 })

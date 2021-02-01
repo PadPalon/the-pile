@@ -10,7 +10,7 @@
   },
   "nodemonConfig": {
     "ignore": [
-      "sessions.json"
+      "data/*"
     ]
   },
   "repository": {
