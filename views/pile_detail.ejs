@@ -56,8 +56,13 @@
     }
 </script>
 
+<% const shareUrl = pageUrl + "/piles/" + pile.identifier + "/share" %>
 <div>
     <h1><%= pile.name %></h1>
+    <p>
+        Link to share <input type="button" onclick="navigator.clipboard.writeText('<%= shareUrl %>');" value="Copy to clipboard"/><br/>
+        <a href="<%= shareUrl %>"><%= shareUrl %></a>
+    </p>
     <table>
         <thead>
             <tr>

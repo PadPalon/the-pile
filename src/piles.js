@@ -8,8 +8,14 @@ db.defaults({ piles: [] }).write()
 
 const { v4: uuid } = require('uuid')
 
-const getPile = (identifier, user) => {
-    return db.get('piles').find({identifier: identifier, creator: user.identifier}).value()
+const getPileForUser = (identifier, user) => {
+    return db.get('piles')
+        .find(pile => pile.identifier == identifier && (pile.creator == user.identifier || pile.shared.includes(user.identifier)))
+        .value()
+}
+
+const getPile = identifier => {
+    return db.get('piles').find({identifier: identifier}).value()
 }
 
 const getPiles = user => {
@@ -21,12 +27,20 @@ const createPile = (name = 'New list', user) => {
         identifier: uuid(),
         name,
         items: [],
-        creator: user.identifier
+        creator: user.identifier,
+        shared: []
     }
     db.get('piles')
         .push(pile)
         .write()
     return pile
+}
+
+const sharePile = (pileId, user) => {
+    db.get('piles')
+        .find(pile => pile.identifier == pileId && !pile.shared.includes(user.identifier))
+        .update('shared', shared => [...shared, user.identifier])
+        .write()
 }
 
 const createItem = (pile, name = 'New item') => {
@@ -41,8 +55,10 @@ const createItem = (pile, name = 'New item') => {
 }
 
 module.exports = {
+    getPileForUser,
     getPile,
     getPiles,
     createPile,
+    sharePile,
     createItem
 }

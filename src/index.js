@@ -64,10 +64,6 @@ const ensureAuthenticated = (req, res, next) => {
     res.redirect('/')
 }
 
-const getPileFromUser = (user, pileId) => {
-    return pileStore.getPile(pileId, user)
-}
-
 const getItemFromPile = (pile, itemId) => {
     return pile.items.find(i => i.identifier === itemId)
 }
@@ -78,7 +74,7 @@ app.get('/piles', ensureAuthenticated, (req, res) => res.render('piles', { piles
 app.get('/piles/create', ensureAuthenticated, (req, res) => res.render('pile_create', {}))
 app.get('/piles/:id', ensureAuthenticated, (req, res) => {
     const pileId = req.params.id
-    const pile = getPileFromUser(req.user, pileId)
+    const pile = pileStore.getPileForUser(pileId, req.user)
     pile.items.forEach(item => {
         item.upvotes = voteStore.getUpvotes(item)
         item.downvotes = voteStore.getDownvotes(item)
@@ -88,7 +84,12 @@ app.get('/piles/:id', ensureAuthenticated, (req, res) => {
             ...acc,
             [curr[0]]: curr[1]
         }), {})
-    res.render('pile_detail', { pile, votes })
+    res.render('pile_detail', { pile, votes, pageUrl: process.env.URL })
+})
+app.get('/piles/:id/share', ensureAuthenticated, (req, res) => {
+    const pileId = req.params.id
+    pileStore.sharePile(pileId, req.user)
+    res.redirect(`/piles/${pileId}`)
 })
 
 app.get('/account', ensureAuthenticated, (req, res) => res.render('account', { user: req.user }))
@@ -102,7 +103,7 @@ app.post('/pile', ensureAuthenticated, (req, res) => {
 app.post('/item', ensureAuthenticated, (req, res) => {
     const pileId = req.body.pileId
     const name = req.body.name
-    const pile = getPileFromUser(req.user, pileId)
+    const pile = pileStore.getPileForUser(pileId, req.user)
     const item = pileStore.createItem(pile, name)
     voteStore.setupItemVotes(item)
     res.send(item)
@@ -110,7 +111,7 @@ app.post('/item', ensureAuthenticated, (req, res) => {
 app.put('/item/vote/up', ensureAuthenticated, (req, res) => {
     const pileId = req.body.pileId
     const itemId = req.body.itemId
-    const pile = getPileFromUser(req.user, pileId)
+    const pile = pileStore.getPileForUser(pileId, req.user)
     const item = getItemFromPile(pile, itemId)
     if (voteStore.getVote(item, req.user) === 'DOWN') {
         voteStore.addUpvote(item, req.user)
@@ -124,7 +125,7 @@ app.put('/item/vote/up', ensureAuthenticated, (req, res) => {
 app.put('/item/vote/down', ensureAuthenticated, (req, res) => {
     const pileId = req.body.pileId
     const itemId = req.body.itemId
-    const pile = getPileFromUser(req.user, pileId)
+    const pile = pileStore.getPileForUser(pileId, req.user)
     const item = getItemFromPile(pile, itemId)
     if (voteStore.getVote(item, req.user) === 'UP') {
         voteStore.addDownvote(item, req.user)
