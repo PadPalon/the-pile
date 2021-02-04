@@ -114,6 +114,7 @@ app.put('/item/vote/up', ensureAuthenticated, (req, res) => {
     const pile = pileStore.getPileForUser(pileId, req.user)
     const item = getItemFromPile(pile, itemId)
     if (voteStore.getVote(item, req.user) === 'DOWN') {
+        voteStore.removeVote(item, req.user)
         voteStore.addUpvote(item, req.user)
     } else if (voteStore.getVote(item, req.user) === 'UP') {
         voteStore.removeVote(item, req.user)
@@ -128,6 +129,7 @@ app.put('/item/vote/down', ensureAuthenticated, (req, res) => {
     const pile = pileStore.getPileForUser(pileId, req.user)
     const item = getItemFromPile(pile, itemId)
     if (voteStore.getVote(item, req.user) === 'UP') {
+        voteStore.removeVote(item, req.user)
         voteStore.addDownvote(item, req.user)
     } else if (voteStore.getVote(item, req.user) === 'DOWN') {
         voteStore.removeVote(item, req.user)
