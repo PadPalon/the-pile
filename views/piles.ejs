@@ -1,3 +1,5 @@
+<%- include("header") %>
+
 <script type="text/javascript">
     const createPile = () => {
         const url = '/pile'
@@ -20,11 +22,27 @@
 </script>
 
 <div>
-    <ul>
+    <h1>Piles</h2>
+    <% if (piles.length > 0) { %>
+    <table class="pure-u">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
         <% piles.forEach(pile => { %>
-            <li><a href="/piles/<%= pile.identifier %>"><%= pile.name %></a></li>
-        <% }) %> 
-    </ul>
-    <a href="piles/create"><button>Create pile</button></a>
-    <p><a href="/">Go to homepage</a></p>
+            <td><%= pile.name %></li>
+            <td><a href="/piles/<%= pile.identifier %>"><button class="pure-button">View</button></a></li>
+        <% }) %>
+        </tbody>
+    </table>
+    <% } else { %>
+        <p>No piles visible. Create one or get the share link from someone else.</p>
+    <% } %> 
+    <p>
+        <a href="piles/create"><button class="pure-button pure-button-primary">Create pile</button></a>
+        <a href="/"><button class="pure-button">Go to homepage</button></a>
+    </p>
 </div>

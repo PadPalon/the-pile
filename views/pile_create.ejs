@@ -1,3 +1,5 @@
+<%- include("header") %>
+
 <script type="text/javascript">
     const createPile = () => {
         const url = '/pile'
@@ -21,9 +23,13 @@
 </script>
 
 <div>
-    <form>
-        <label for="pile-name">Name</label><input id="pile-name" type="text"/>
-        <button type="button" onclick="createPile()">Save</button>
+    <h1>Create Pile</h2>
+    <form class="pure-form pure-form-stacked">
+        <label for="pile-name">Name</label>
+        <input id="pile-name" type="text"/>
     </form>
-    <p><a href="/piles">Go to pile list</a></p>
+    <p>
+        <button class="pure-button pure-button-primary" type="button" onclick="createPile()">Save</button>
+        <a href="/piles"><button class="pure-button">Cancel</button></a>
+    </p>
 </div>

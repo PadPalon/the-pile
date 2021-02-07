@@ -1,11 +1,18 @@
-<div>
+<%- include("header") %>
+
+<div class="pure-g">
     <% if (user) { %>
-        <h2>Hello, <%= user.displayName %>. - <a href='/logout'>Logout</a></h2>
-        <p><a href="/account">See Account Information</a></p>
-        <p><a href="/piles">See Piles</a></p>
+        <div class="pure-u-2-3">
+            <h1>Hello, <%= user.displayName %></h2>
+            <a href="/piles"><button class="pure-button pure-button-primary">See Piles</button></a>
+            <a href="/account"><button class="pure-button">See Account Information</button></a>
+        </div>
+        <div class="pure-u-1-3">
+            <a href='/logout' class="right"><button class="pure-button">Logout</button></a>
+        </div>
     <% } else { %>
-        <div>
-            <h2>Welcome! Please log in.</h2>
+        <div class="pure-u">
+            <h1>Welcome! Please log in.</h2>
             <p><a href="/auth/steam">Sign On with Steam</a></p>
         </div>
     <% } %>
