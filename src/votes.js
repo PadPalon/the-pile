@@ -1,58 +1,70 @@
-const low = require('lowdb')
-const FileSync = require('lowdb/adapters/FileSync')
+const databaseSetup = require('./database_setup')
 
-const adapter = new FileSync('data/votes.json')
-const db = low(adapter)
-
-db.defaults({ votes: [] }).write()
-
-const setupItemVotes = item => {
-    db.get('votes').push({
-        identifier: item.identifier,
-        upvotes: 0,
-        downvotes: 0
-    }).write()
-}
-
-const getVote = (item, user) => {
-    return db.get('votes').find({identifier: item.identifier}).get(user.identifier).value()
-}
-
-const addUpvote = (item, user) => {
-    const votes = db.get('votes').find({identifier: item.identifier})
-    votes.set(user.identifier, 'UP').update('upvotes', v => v + 1).write()
-}
-
-const addDownvote = (item, user) => {
-    const votes = db.get('votes').find({identifier: item.identifier})
-    votes.set(user.identifier, 'DOWN').update('downvotes', v => v + 1).write()
-}
-
-const removeVote = (item, user) => {
-    const votes = db.get('votes').find({identifier: item.identifier})
-    const currentVote = votes.get(user.identifier).value()
-    if (currentVote === 'UP') {
-        votes.update('upvotes', v => v - 1).write()
-    } else if (currentVote === 'DOWN') {
-        votes.update('downvotes', v => v - 1).write()
+module.exports.VoteStore = class {
+    constructor() {
+        databaseSetup(db => this.db = db)
     }
-    votes.set(user.identifier, null).write()
-}
 
-const getUpvotes = item => {
-    return db.get('votes').find({identifier: item.identifier}).get('upvotes').value() || 0
-}
+    getVote(item, user) {
+        return this.db.collection('votes').findOne({
+            identifier: item.identifier,
+            [user.identifier]: { $ne: null }
+        }).then(vote => vote ? vote[user.identifier] : null)
+    }
 
-const getDownvotes = item => {
-    return db.get('votes').find({identifier: item.identifier}).get('downvotes').value() || 0
-}
+    addUpvote(item, user) {
+        return this.db.collection('votes').updateOne(
+            { identifier: item.identifier },
+            {
+                $set: { [user.identifier]: 'UP' },
+                $inc: { upvotes: 1 }
+            }
+        )
+    }
 
-module.exports = {
-    setupItemVotes,
-    getVote,
-    addUpvote,
-    addDownvote,
-    removeVote,
-    getUpvotes,
-    getDownvotes
+    addDownvote(item, user) {
+        return this.db.collection('votes').updateOne(
+            { identifier: item.identifier },
+            {
+                $set: { [user.identifier]: 'DOWN' },
+                $inc: { downvotes: 1 }
+            }
+        )
+    }
+
+    removeVote(item, user) {
+        const decreaseVotes = field => {
+            this.db.collection('votes').updateOne(
+                {
+                    identifier: item.identifier
+                },
+                {
+                    $set: { [user.identifier]: null },
+                    $inc: { [field]: -1 }
+                }
+            )
+        }
+
+        return this.db.collection('votes')
+            .findOne({ identifier: item.identifier })
+            .then(votes => {
+                if (votes[user.identifier] === 'UP') {
+                    decreaseVotes('upvotes')
+                } else if (votes[user.identifier] === 'DOWN') {
+                    decreaseVotes('downvotes')
+                }
+            })
+    }
+
+    getUpvotes(item) {
+        return this.db.collection('votes').findOne({
+            identifier: item.identifier
+        }).then(votes => votes.upvotes)
+    }
+
+    getDownvotes(item) {
+        return this.db.collection('votes').findOne({
+            identifier: item.identifier
+        }).then(votes => votes.downvotes)
+    }
 }

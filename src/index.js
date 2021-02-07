@@ -8,18 +8,23 @@ const SteamStrategy = require('passport-steam').Strategy
 const bodyParser = require('body-parser')
 
 const fs = require('fs')
-if(!fs.existsSync('data/')) {
+if (!fs.existsSync('data/')) {
     fs.mkdirSync('data')
 }
 
 const adapter = new FileSync('data/sessions.json', { defaultValue: [] })
 const db = lowdb(adapter)
 
-const userStore = require('./users')
-const pileStore = require('./piles')
-const voteStore = require('./votes')
-
 require('dotenv').config()
+
+const PileStore = require('./piles').PileStore
+const pileStore = new PileStore()
+
+const UserStore = require('./users').UserStore
+const userStore = new UserStore()
+
+const VoteStore = require('./votes').VoteStore
+const voteStore = new VoteStore()
 
 var app = express()
 
@@ -47,7 +52,7 @@ passport.use(new SteamStrategy(
         profile: false
     },
     (identifier, profile, done) => {
-        return done(null, userStore.getOrCreateUser(identifier))
+        userStore.getOrCreateUser(identifier).then(user => done(null, user.value))
     }
 ))
 
@@ -70,26 +75,26 @@ const getItemFromPile = (pile, itemId) => {
 
 app.get('/', (req, res) => res.render('index', { user: req.user }))
 
-app.get('/piles', ensureAuthenticated, (req, res) => res.render('piles', { piles: pileStore.getPiles(req.user) }))
+app.get('/piles', ensureAuthenticated, (req, res) => {
+    pileStore.getPiles(req.user).then(piles => res.render('piles', { piles: piles || [] }))
+})
 app.get('/piles/create', ensureAuthenticated, (req, res) => res.render('pile_create', {}))
 app.get('/piles/:id', ensureAuthenticated, (req, res) => {
     const pileId = req.params.id
-    const pile = pileStore.getPileForUser(pileId, req.user)
-    pile.items.forEach(item => {
-        item.upvotes = voteStore.getUpvotes(item)
-        item.downvotes = voteStore.getDownvotes(item)
-    })
-    const votes = pile.items.map(item => [item.identifier, voteStore.getVote(item, req.user)])
-        .reduce((acc, curr) => ({
-            ...acc,
-            [curr[0]]: curr[1]
-        }), {})
-    res.render('pile_detail', { pile, votes, pageUrl: process.env.URL })
+    pileStore.getPileForUser(pileId, req.user)
+        .then(pile => {
+            const votes = {}
+            const votePromises = pile.items.map(item => ([
+                voteStore.getUpvotes(item).then(votes => item.upvotes = votes),
+                voteStore.getDownvotes(item).then(votes => item.downvotes = votes),
+                voteStore.getVote(item, req.user).then(vote => votes[item.identifier] = vote)
+            ])).reduce((acc, curr) => ([...curr, ...acc]), [])
+            Promise.all(votePromises).then(() => res.render('pile_detail', { pile, votes, pageUrl: process.env.URL }))
+        })
 })
 app.get('/piles/:id/share', ensureAuthenticated, (req, res) => {
     const pileId = req.params.id
-    pileStore.sharePile(pileId, req.user)
-    res.redirect(`/piles/${pileId}`)
+    pileStore.sharePile(pileId, req.user).then(() => res.redirect(`/piles/${pileId}`))
 })
 
 app.get('/account', ensureAuthenticated, (req, res) => res.render('account', { user: req.user }))
@@ -103,40 +108,44 @@ app.post('/pile', ensureAuthenticated, (req, res) => {
 app.post('/item', ensureAuthenticated, (req, res) => {
     const pileId = req.body.pileId
     const name = req.body.name
-    const pile = pileStore.getPileForUser(pileId, req.user)
-    const item = pileStore.createItem(pile, name)
-    voteStore.setupItemVotes(item)
+    const item = pileStore.createItem(pileId, name)
     res.send(item)
 })
 app.put('/item/vote/up', ensureAuthenticated, (req, res) => {
     const pileId = req.body.pileId
     const itemId = req.body.itemId
-    const pile = pileStore.getPileForUser(pileId, req.user)
-    const item = getItemFromPile(pile, itemId)
-    if (voteStore.getVote(item, req.user) === 'DOWN') {
-        voteStore.removeVote(item, req.user)
-        voteStore.addUpvote(item, req.user)
-    } else if (voteStore.getVote(item, req.user) === 'UP') {
-        voteStore.removeVote(item, req.user)
-    } else if (voteStore.getVote(item, req.user) !== 'UP') {
-        voteStore.addUpvote(item, req.user)
-    }
-    res.end()
+    pileStore.getPileForUser(pileId, req.user)
+        .then(pile => {
+            const item = getItemFromPile(pile, itemId)
+            voteStore.getVote(item, req.user)
+                .then(vote => {
+                    if (vote === 'DOWN') {
+                        voteStore.removeVote(item, req.user).then(() => voteStore.addUpvote(item, req.user)).then(() => res.end())
+                    } else if (vote === 'UP') {
+                        voteStore.removeVote(item, req.user).then(() => res.end())
+                    } else if (vote !== 'UP') {
+                        voteStore.addUpvote(item, req.user).then(() => res.end())
+                    }
+                })
+        })
 })
 app.put('/item/vote/down', ensureAuthenticated, (req, res) => {
     const pileId = req.body.pileId
     const itemId = req.body.itemId
-    const pile = pileStore.getPileForUser(pileId, req.user)
-    const item = getItemFromPile(pile, itemId)
-    if (voteStore.getVote(item, req.user) === 'UP') {
-        voteStore.removeVote(item, req.user)
-        voteStore.addDownvote(item, req.user)
-    } else if (voteStore.getVote(item, req.user) === 'DOWN') {
-        voteStore.removeVote(item, req.user)
-    } else if (voteStore.getVote(item, req.user) !== 'DOWN') {
-        voteStore.addDownvote(item, req.user)
-    }
-    res.end()
+    pileStore.getPileForUser(pileId, req.user)
+        .then(pile => {
+            const item = getItemFromPile(pile, itemId)
+            voteStore.getVote(item, req.user)
+                .then(vote => {
+                    if (vote === 'UP') {
+                        voteStore.removeVote(item, req.user).then(() => voteStore.addDownvote(item, req.user)).then(() => res.end())
+                    } else if (vote === 'DOWN') {
+                        voteStore.removeVote(item, req.user).then(() => res.end())
+                    } else if (vote !== 'DOWN') {
+                        voteStore.addDownvote(item, req.user).then(() => res.end())
+                    }
+                })
+        })
 })
 
 app.get('/logout', (req, res) => {

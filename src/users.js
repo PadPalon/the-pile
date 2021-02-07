@@ -1,28 +1,25 @@
 const { v4: uuid } = require('uuid')
+const databaseSetup = require('./database_setup')
 
-const low = require('lowdb')
-const FileSync = require('lowdb/adapters/FileSync')
-
-const adapter = new FileSync('data/users.json')
-const db = low(adapter)
-
-db.defaults({ users: [] }).write()
-
-const createUser = steamId => {
-    return {
-        identifier: uuid(),
-        steamId: steamId,
-        displayName: 'Name'
+module.exports.UserStore = class {
+    constructor() {
+        databaseSetup(db => this.db = db)
     }
-}
 
-exports.getOrCreateUser = steamId => {
-    const user = db.get('users').find({steamId: steamId}).value()
-    if (user) {
-        return user
-    } else {
-        const newUser = createUser(steamId)
-        db.get('users').push(newUser).write()
-        return newUser
+    getOrCreateUser(steamId) {
+        return this.db.collection('users').findOneAndUpdate(
+            { steamId },
+            {
+                $setOnInsert: {
+                    identifier: uuid(),
+                    steamId,
+                    displayName: 'Name'
+                }
+            },
+            {
+                returnNewDocument: true,
+                upsert: true
+            }
+        )
     }
 }
