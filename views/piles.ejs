@@ -33,8 +33,10 @@
         </thead>
         <tbody>
         <% piles.forEach(pile => { %>
-            <td><%= pile.name %></li>
-            <td><a href="/piles/<%= pile.identifier %>"><button class="pure-button">View</button></a></li>
+            <tr>
+                <td><%= pile.name %></li>
+                <td><a href="/piles/<%= pile.identifier %>"><button class="pure-button">View</button></a></li>
+            </tr>
         <% }) %>
         </tbody>
     </table>
