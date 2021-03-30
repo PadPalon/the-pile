@@ -8,6 +8,11 @@
     .current-downvote {
         background-color: orange;
     }
+
+    .delete-button {
+        background-color: lightcoral;
+        color: white;
+    }
 </style>
 
 <script type="text/javascript">
@@ -56,6 +61,16 @@
 
         fetch(url, options).then(res => window.location.reload(true))
     }
+
+    const deleteItem = itemId => {
+        const url = `/piles/<%= pile.identifier %>/item/${itemId}`
+
+        const options = {
+            method: 'DELETE'
+        }
+
+        fetch(url, options).then(res => window.location.reload(true))
+    }
 </script>
 
 <% const shareUrl = pageUrl + "/piles/" + pile.identifier + "/share" %>
@@ -67,11 +82,11 @@
                 <tr>
                     <th>Name</th>
                     <th>Votes</th>
-                    <th></th>
+                    <th colspan="2"></th>
                 </tr>
             </thead>
             <tbody>
-            <% pile.items.sort((first, second) => (second.upvotes - second.downvotes) - (first.upvotes - first.downvotes)).forEach(item => { %>
+            <% pile.items.sort((first, second) => (first.downvotes - second.downvotes) || (second.upvotes - first.upvotes)).forEach(item => { %>
                 <tr>
                     <td><%= item.name %></td>
                     <td><%= item.upvotes - item.downvotes %></td>
@@ -79,20 +94,27 @@
                         <button class="<%= votes[item.identifier] === 'UP' ? 'current-upvote' : '' %> pure-button" onclick="upvote('<%= item.identifier %>')">Upvote</button>
                         <button class="<%= votes[item.identifier] === 'DOWN' ? 'current-downvote' : '' %> pure-button" onclick="downvote('<%= item.identifier %>')">Downvote</button>
                     </td>
+                    <% if (isCreator) { %>
+                    <td><button class="delete-button pure-button" onclick="deleteItem('<%= item.identifier %>')">Delete</button></td>
+                    <% } else { %>
+                    <td></td>
+                    <% } %>
                 </tr>
             <% }) %>
             <tr>
                 <td colspan="2"><input id="item-name"/></td>
-                <td><button class="pure-button" onclick="createItem()">New</button></td>
+                <td colspan="2"><button class="pure-button pure-button-primary" onclick="createItem()">New</button></td>
             </tr>
             </tbody> 
         </table>
         <p><a href="/piles"><button class="pure-button">Go to pile list</button></a></p>
     </div>
+    <% if (isCreator) { %>
     <div class="pure-u-1-3">
         <h2>Sharing</h2>
         <p>Link to share</p>
         <p><a href="<%= shareUrl %>"><%= shareUrl %></a></p>
         <button class="pure-button" onclick="navigator.clipboard.writeText('<%= shareUrl %>');">Copy to clipboard</button>
     </div>
+    <% } %>
 </div>

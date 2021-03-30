@@ -89,7 +89,7 @@ app.get('/piles/:id', ensureAuthenticated, (req, res) => {
                 voteStore.getDownvotes(item).then(votes => item.downvotes = votes),
                 voteStore.getVote(item, req.user).then(vote => votes[item.identifier] = vote)
             ])).reduce((acc, curr) => ([...curr, ...acc]), [])
-            Promise.all(votePromises).then(() => res.render('pile_detail', { pile, votes, pageUrl: process.env.URL }))
+            Promise.all(votePromises).then(() => res.render('pile_detail', { pile, votes, pageUrl: process.env.URL, isCreator: pile.creator === req.user.identifier }))
         })
 })
 app.get('/piles/:id/share', ensureAuthenticated, (req, res) => {
@@ -145,6 +145,19 @@ app.put('/item/vote/down', ensureAuthenticated, (req, res) => {
                         voteStore.addDownvote(item, req.user).then(() => res.end())
                     }
                 })
+        })
+})
+
+app.delete('/piles/:pileId/item/:itemId', ensureAuthenticated, (req, res) => {
+    const pileId = req.params.pileId
+    const itemId = req.params.itemId
+    pileStore.getPileForUser(pileId, req.user)
+        .then(pile => {
+            if (pile.creator === req.user.identifier) {
+                Promise.all([voteStore.deleteVotes(itemId), pileStore.deleteItem(pileId, itemId)]).then(() => res.end())
+            } else {
+                res.end()
+            }
         })
 })
 

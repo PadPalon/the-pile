@@ -79,4 +79,11 @@ module.exports.PileStore = class {
         })
         return item
     }
+
+    deleteItem(pileId, itemId) {
+        return this.db.collection('piles').updateOne(
+            { identifier: pileId },
+            { $pull: { 'items': { identifier: itemId } } }
+        )
+    }
 }

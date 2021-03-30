@@ -67,4 +67,8 @@ module.exports.VoteStore = class {
             identifier: item.identifier
         }).then(votes => votes.downvotes)
     }
+
+    deleteVotes(itemId) {
+        return this.db.collection('votes').deleteMany({ identifier: itemId })
+    }
 }
