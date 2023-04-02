@@ -6,7 +6,7 @@ module.exports.UserStore = class {
         databaseSetup(db => this.db = db)
     }
 
-    getOrCreateUser(steamId) {
+    getOrCreateUser(steamId, profile) {
         return this.db.collection('users').findOneAndUpdate(
             { steamId },
             {
@@ -14,12 +14,21 @@ module.exports.UserStore = class {
                     identifier: uuid(),
                     steamId,
                     displayName: 'Name'
+                },
+                $set: {
+                    profile
                 }
             },
             {
                 returnNewDocument: true,
                 upsert: true
             }
+        )
+    }
+
+    getUserByIdentifier(identifier) {
+        return this.db.collection('users').findOne(
+            { identifier }
         )
     }
 }

@@ -1,5 +1,7 @@
 const databaseSetup = require('./database_setup')
 
+const metaFields = ['identifier', 'upvotes', 'downvotes']
+
 module.exports.VoteStore = class {
     constructor() {
         databaseSetup(db => this.db = db)
@@ -62,10 +64,28 @@ module.exports.VoteStore = class {
         }).then(votes => votes.upvotes)
     }
 
+    getUpVoters(item) {
+        return this.db.collection('votes').findOne({
+            identifier: item.identifier
+        }).then(votes => Object.entries(votes)
+            .filter(([key, value]) => !metaFields.includes(key) && value === 'UP')
+            .map(([key]) => key)
+        )
+    }
+
     getDownvotes(item) {
         return this.db.collection('votes').findOne({
             identifier: item.identifier
         }).then(votes => votes.downvotes)
+    }
+
+    getDownVoters(item) {
+        return this.db.collection('votes').findOne({
+            identifier: item.identifier
+        }).then(votes => Object.entries(votes)
+            .filter(([key, value]) => !metaFields.includes(key) && value === 'DOWN')
+            .map(([key]) => key)
+        )
     }
 
     deleteVotes(itemId) {

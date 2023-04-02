@@ -82,7 +82,10 @@
                 <tr>
                     <th>Name</th>
                     <th>Votes</th>
-                    <th colspan="2"></th>
+                    <th></th>
+                    <% if (isCreator) { %>
+                        <th></th>
+                    <% } %>
                 </tr>
             </thead>
             <tbody>
@@ -96,14 +99,26 @@
                     </td>
                     <% if (isCreator) { %>
                     <td><button class="delete-button pure-button" onclick="deleteItem('<%= item.identifier %>')">Delete</button></td>
-                    <% } else { %>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><span><%= 
+                            [
+                                ...(item.upVoters.map(voter => `${voter} +`)),
+                                ...(item.downVoters.map(voter => `${voter} -`))
+                            ].join(', ')
+                        %></span></td>
+                    </tr>
+                    <% } else {%>
                     <td></td>
                     <% } %>
                 </tr>
             <% }) %>
             <tr>
                 <td colspan="2"><input id="item-name"/></td>
-                <td colspan="2"><button class="pure-button pure-button-primary" onclick="createItem()">New</button></td>
+                <td><button class="pure-button pure-button-primary" onclick="createItem()">New</button></td>
+                <% if (isCreator) { %>
+                    <td></td>
+                <% } %>
             </tr>
             </tbody> 
         </table>

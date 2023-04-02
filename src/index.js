@@ -52,7 +52,7 @@ passport.use(new SteamStrategy(
         profile: false
     },
     (identifier, profile, done) => {
-        userStore.getOrCreateUser(identifier).then(user => done(null, user.value))
+        userStore.getOrCreateUser(identifier, profile).then(user => done(null, user.value))
     }
 ))
 
@@ -87,7 +87,13 @@ app.get('/piles/:id', ensureAuthenticated, (req, res) => {
             const votePromises = pile.items.map(item => ([
                 voteStore.getUpvotes(item).then(votes => item.upvotes = votes),
                 voteStore.getDownvotes(item).then(votes => item.downvotes = votes),
-                voteStore.getVote(item, req.user).then(vote => votes[item.identifier] = vote)
+                voteStore.getVote(item, req.user).then(vote => votes[item.identifier] = vote),
+                voteStore.getUpVoters(item)
+                    .then(userIdentifiers => Promise.all(userIdentifiers.map(identifier => userStore.getUserByIdentifier(identifier))))
+                    .then(voters => item.upVoters = voters.map(voter => voter.displayName)),
+                voteStore.getDownVoters(item)
+                    .then(userIdentifiers => Promise.all(userIdentifiers.map(identifier => userStore.getUserByIdentifier(identifier))))
+                    .then(voters => item.downVoters = voters.map(voter => voter.displayName)),
             ])).reduce((acc, curr) => ([...curr, ...acc]), [])
             Promise.all(votePromises).then(() => res.render('pile_detail', { pile, votes, pageUrl: process.env.URL, isCreator: pile.creator === req.user.identifier }))
         })
