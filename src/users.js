@@ -13,7 +13,7 @@ module.exports.UserStore = class {
                 $setOnInsert: {
                     identifier: uuid(),
                     steamId,
-                    displayName: 'Name'
+                    displayName: profile?.displayName || 'Name'
                 },
                 $set: {
                     profile

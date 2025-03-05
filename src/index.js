@@ -49,7 +49,7 @@ passport.use(new SteamStrategy(
     {
         returnURL: `${process.env.URL}/auth/steam/return`,
         realm: process.env.URL,
-        profile: false
+        apiKey: process.env.API_KEY
     },
     (identifier, profile, done) => {
         userStore.getOrCreateUser(identifier, profile).then(user => done(null, user.value))
@@ -114,7 +114,8 @@ app.post('/pile', ensureAuthenticated, (req, res) => {
 app.post('/item', ensureAuthenticated, (req, res) => {
     const pileId = req.body.pileId
     const name = req.body.name
-    const item = pileStore.createItem(pileId, name)
+    const note = req.body.note
+    const item = pileStore.createItem(pileId, name, note)
     res.send(item)
 })
 app.put('/item/vote/up', ensureAuthenticated, (req, res) => {
