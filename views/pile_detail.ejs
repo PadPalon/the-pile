@@ -13,6 +13,23 @@
         background-color: lightcoral;
         color: white;
     }
+
+    .note {
+        font-size: 50%;
+        margin-left: 5px;
+    }
+
+    .hidden-note {
+        display: none;
+    }
+
+    .item-list {
+        margin-right: 25px;
+    }
+
+    .centered-column {
+        text-align: center;
+    }
 </style>
 
 <script type="text/javascript">
@@ -48,7 +65,8 @@
 
         const item = {
             pileId: '<%= pile.identifier %>',
-            name: document.getElementById("item-name").value
+            name: document.getElementById("item-name").value,
+            note: document.getElementById("item-note").value
         }
 
         const options = {
@@ -71,13 +89,18 @@
 
         fetch(url, options).then(res => window.location.reload(true))
     }
+
+    const showNote = index => {
+        const note = document.getElementById(`note-${index}`)
+        note.classList.toggle('hidden-note')
+    }
 </script>
 
 <% const shareUrl = pageUrl + "/piles/" + pile.identifier + "/share" %>
 <div class="pure-g">
     <div class="pure-u-2-3">
         <h1>Pile '<%= pile.name %>'</h1>
-        <table class="pure-table pure-table-horizontal">
+        <table class="pure-table pure-table-horizontal item-list">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -89,17 +112,23 @@
                 </tr>
             </thead>
             <tbody>
-            <% pile.items.sort((first, second) => (first.downvotes - second.downvotes) || (second.upvotes - first.upvotes)).forEach(item => { %>
+            <% pile.items.sort((first, second) => (first.downvotes - second.downvotes) || (second.upvotes - first.upvotes)).forEach((item, index) => { %>
                 <tr>
-                    <td><%= item.name %></td>
-                    <td><%= item.upvotes - item.downvotes %></td>
                     <td>
+                        <%= item.name %>
+                        <% if (item.note) { %>
+                            <button class="note pure-button" onclick="showNote('<%= index %>')"><%- include("icons/note.html") %></button>
+                        <% } %>
+                    </td>
+                    <td><%= item.upvotes - item.downvotes %></td>
+                    <td class="centered-column">
                         <button class="<%= votes[item.identifier] === 'UP' ? 'current-upvote' : '' %> pure-button" onclick="upvote('<%= item.identifier %>')">Upvote</button>
                         <button class="<%= votes[item.identifier] === 'DOWN' ? 'current-downvote' : '' %> pure-button" onclick="downvote('<%= item.identifier %>')">Downvote</button>
                     </td>
                     <% if (isCreator) { %>
                     <td><button class="delete-button pure-button" onclick="deleteItem('<%= item.identifier %>')">Delete</button></td>
                     </tr>
+                    <% if (item.upvotes > 0 || item.downvotes > 0) { %>
                     <tr>
                         <td colspan="4"><span><%= 
                             [
@@ -108,13 +137,20 @@
                             ].join(', ')
                         %></span></td>
                     </tr>
+                    <% } %>
                     <% } else {%>
                     <td></td>
                     <% } %>
                 </tr>
+                <% if (item.note) { %>
+                    <tr class="hidden-note" id="note-<%= index %>">
+                        <td colspan="<%= isCreator ? 4 : 3 %>"><%= item.note %></td>
+                    </tr>
+                <% } %>
             <% }) %>
             <tr>
-                <td colspan="2"><input id="item-name"/></td>
+                <td><input id="item-name"/></td>
+                <td><input id="item-note" placeholder="Notes"/></td>
                 <td><button class="pure-button pure-button-primary" onclick="createItem()">New</button></td>
                 <% if (isCreator) { %>
                     <td></td>

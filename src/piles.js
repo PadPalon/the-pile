@@ -59,10 +59,11 @@ module.exports.PileStore = class {
         )
     }
 
-    createItem(pileId, name = 'New item') {
+    createItem(pileId, name = 'New item', note = '') {
         const item = {
             identifier: uuid(),
-            name
+            name,
+            note
         }
         this.db.collection('piles').updateOne(
             {
